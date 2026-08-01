@@ -18,14 +18,26 @@ import sys
 import tempfile
 from urllib.parse import urlparse
 
+from process_control import executable_command, run_process, terminate_process_tree
+from runtime_paths import resolve_runtime_paths, safe_child_environment
 
-FIXED_BINARY = Path(
-    "/Users/dd/Documents/技能台/隔离项目/runtime/parse-video-cbb1c5b4/parse-video"
-)
-DEFAULT_DESKTOP_OUTPUT = Path("/Users/dd/Desktop/下载视频")
-DEFAULT_EVIDENCE_ROOT = Path("/Users/dd/Documents/蒸馏！！！/evidence/parse-video")
-DEFAULT_WHISPER_MODEL = Path("/Users/dd/.cache/whisper-cpp/ggml-base.bin")
-DEFAULT_TEMP_ROOT = Path(tempfile.gettempdir()) / "codex-parse-video"
+
+RUNTIME = resolve_runtime_paths()
+FIXED_BINARY = RUNTIME.parser_binary
+DEFAULT_DESKTOP_OUTPUT = RUNTIME.download_root
+DEFAULT_EVIDENCE_ROOT = RUNTIME.evidence_root
+
+
+def default_whisper_model() -> Path:
+    candidates = (
+        RUNTIME.codex_home / "parse-video" / "models" / "ggml-base.bin",
+        Path.home() / ".cache" / "whisper-cpp" / "ggml-base.bin",
+    )
+    return next((path for path in candidates if path.is_file()), candidates[0])
+
+
+DEFAULT_WHISPER_MODEL = default_whisper_model()
+DEFAULT_TEMP_ROOT = RUNTIME.temp_root
 MARKER_NAME = ".parse-video-workdir.json"
 VIDEO_SUFFIXES = {".mp4", ".mov", ".mkv", ".webm", ".m4v", ".avi"}
 URL_PATTERN = re.compile(r"https?://[^\s<>\"']+")
@@ -137,18 +149,17 @@ def source_platform_from_url(url: str) -> str:
     raise UserInputError("该链接域名不在固定解析器当前支持的平台清单内。")
 
 
-def safe_child_environment(job_dir: Path) -> dict[str, str]:
+def build_child_environment(job_dir: Path) -> dict[str, str]:
     home_dir = job_dir / "isolated-home"
     temp_dir = job_dir / "process-tmp"
     home_dir.mkdir(mode=0o700)
     temp_dir.mkdir(mode=0o700)
-    return {
-        "HOME": str(home_dir),
-        "TMPDIR": str(temp_dir),
-        "PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin",
-        "LANG": "en_US.UTF-8",
-        "LC_ALL": "en_US.UTF-8",
-    }
+    return safe_child_environment(
+        home_dir,
+        temp_dir,
+        platform_name=RUNTIME.platform_name,
+        extra_path=(RUNTIME.runtime_dir,),
+    )
 
 
 def dry_run_result(args: argparse.Namespace, source_url: str | None) -> dict[str, object]:
@@ -156,8 +167,8 @@ def dry_run_result(args: argparse.Namespace, source_url: str | None) -> dict[str
     environment_keys = ["HOME", "LANG", "LC_ALL", "PATH", "TMPDIR"]
     command = None
     if source_url:
-        command = [
-            str(args.binary),
+        command = executable_command(
+            args.binary,
             "parse",
             "--format",
             "json",
@@ -165,7 +176,7 @@ def dry_run_result(args: argparse.Namespace, source_url: str | None) -> dict[str
             "--output-dir",
             str(synthetic_job / "media"),
             source_url,
-        ]
+        )
     return {
         "status": "dry_run",
         "mode": args.mode,
@@ -187,23 +198,12 @@ def install_interrupt_handlers() -> None:
         raise ControlledInterrupt(f"收到中断信号 {signum}")
 
     signal.signal(signal.SIGTERM, handle_interrupt)
+    if hasattr(signal, "SIGBREAK"):
+        signal.signal(signal.SIGBREAK, handle_interrupt)
 
 
 def terminate_process_group(process: subprocess.Popen[str]) -> None:
-    if process.poll() is not None:
-        return
-    try:
-        os.killpg(process.pid, signal.SIGTERM)
-        process.wait(timeout=2)
-    except (ProcessLookupError, subprocess.TimeoutExpired):
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        try:
-            process.wait(timeout=2)
-        except subprocess.TimeoutExpired:
-            pass
+    terminate_process_tree(process, platform_name=RUNTIME.platform_name)
 
 
 def run_checked(
@@ -213,31 +213,29 @@ def run_checked(
     timeout: int,
     label: str,
 ) -> subprocess.CompletedProcess[str]:
-    process = subprocess.Popen(
-        command,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,
-    )
     try:
-        stdout, stderr = process.communicate(timeout=timeout)
+        completed = run_process(
+            command,
+            env=env,
+            timeout=timeout,
+            platform_name=RUNTIME.platform_name,
+        )
     except subprocess.TimeoutExpired as exc:
-        terminate_process_group(process)
         raise RuntimeError(f"{label}超时，已停止相关子进程。") from exc
-    except (KeyboardInterrupt, ControlledInterrupt):
-        terminate_process_group(process)
-        raise
-    if process.returncode != 0:
-        detail = (stderr or stdout).strip()
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout).strip()
         raise RuntimeError(f"{label}失败：{detail[-1200:]}")
-    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+    return completed
 
 
 def ensure_executable(path: Path, label: str) -> Path:
     resolved = path.expanduser().resolve()
-    if not resolved.is_file() or not os.access(resolved, os.X_OK):
+    executable = resolved.is_file() and (
+        resolved.suffix.casefold() == ".py"
+        or RUNTIME.platform_name == "windows"
+        or os.access(resolved, os.X_OK)
+    )
+    if not executable:
         raise RuntimeError(f"{label}不存在或不可执行：{resolved}")
     return resolved
 
@@ -341,8 +339,8 @@ def probe_media(
     timeout: int,
 ) -> dict[str, object]:
     completed = run_checked(
-        [
-            str(ffprobe),
+        executable_command(
+            ffprobe,
             "-v",
             "error",
             "-show_format",
@@ -350,7 +348,7 @@ def probe_media(
             "-of",
             "json",
             str(media),
-        ],
+        ),
         env=env,
         timeout=timeout,
         label="读取视频信息",
@@ -410,8 +408,8 @@ def extract_frames(
         destination = frames_dir / f"frame-{index:04d}.jpg"
         filters = "scale=960:-2:force_original_aspect_ratio=decrease"
         run_checked(
-            [
-                str(ffmpeg),
+            executable_command(
+                ffmpeg,
                 "-hide_banner",
                 "-loglevel",
                 "error",
@@ -427,7 +425,7 @@ def extract_frames(
                 "2",
                 "-y",
                 str(destination),
-            ],
+            ),
             env=env,
             timeout=timeout,
             label=f"抽取第 {index} 张关键帧",
@@ -471,8 +469,8 @@ def create_contact_sheets(
             shutil.copy2(source, chunk_dir / f"frame-{local_index:04d}.jpg")
         destination = sheets_dir / f"contact-sheet-{sheet_index:03d}.jpg"
         run_checked(
-            [
-                str(ffmpeg),
+            executable_command(
+                ffmpeg,
                 "-hide_banner",
                 "-loglevel",
                 "error",
@@ -486,7 +484,7 @@ def create_contact_sheets(
                 "1",
                 "-y",
                 str(destination),
-            ],
+            ),
             env=env,
             timeout=timeout,
             label=f"生成第 {sheet_index} 张画面联系表",
@@ -536,8 +534,8 @@ def run_local_asr(
     audio_dir.mkdir()
     audio_path = audio_dir / "source-16k-mono.wav"
     run_checked(
-        [
-            str(ffmpeg),
+        executable_command(
+            ffmpeg,
             "-hide_banner",
             "-loglevel",
             "error",
@@ -552,15 +550,15 @@ def run_local_asr(
             "pcm_s16le",
             "-y",
             str(audio_path),
-        ],
+        ),
         env=env,
         timeout=timeout,
         label="提取 16kHz 单声道音频",
     )
     output_prefix = evidence_dir / "transcript.timestamped"
     run_checked(
-        [
-            str(whisper_cli),
+        executable_command(
+            whisper_cli,
             "-m",
             str(whisper_model.expanduser().resolve()),
             "-f",
@@ -575,7 +573,7 @@ def run_local_asr(
             "-of",
             str(output_prefix),
             "-np",
-        ],
+        ),
         env=env,
         timeout=timeout,
         label="本地语音转写",
@@ -708,7 +706,7 @@ def prepare_job(args: argparse.Namespace) -> dict[str, object]:
     try:
         job_dir = create_job_dir(args.temp_root, args.mode)
         check_free_space(job_dir, args.min_free_bytes)
-        env = safe_child_environment(job_dir)
+        env = build_child_environment(job_dir)
         media_dir = job_dir / "media"
         evidence_dir = job_dir / "evidence"
         media_dir.mkdir()
@@ -720,8 +718,8 @@ def prepare_job(args: argparse.Namespace) -> dict[str, object]:
             source_type = "local_file"
         else:
             completed = run_checked(
-                [
-                    str(binary),
+                executable_command(
+                    binary,
                     "parse",
                     "--format",
                     "json",
@@ -729,7 +727,7 @@ def prepare_job(args: argparse.Namespace) -> dict[str, object]:
                     "--output-dir",
                     str(media_dir),
                     str(source_url),
-                ],
+                ),
                 env=env,
                 timeout=args.download_timeout,
                 label="匿名获取公开视频",
@@ -849,9 +847,13 @@ def prepare_job(args: argparse.Namespace) -> dict[str, object]:
             "work_dir": str(job_dir),
             "original_media_retained": False,
             "desktop_written": False,
-            "cleanup_command": (
-                f"python3 {Path(__file__).resolve()} cleanup --work-dir {job_dir}"
-            ),
+            "cleanup_argv": [
+                sys.executable,
+                str(Path(__file__).resolve()),
+                "cleanup",
+                "--work-dir",
+                str(job_dir),
+            ],
             "next_step": "读取时间戳转写、联系表和关键帧，输出报告后执行 cleanup。",
         }
     except BaseException:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-import shlex
+import shutil
 import signal
 import subprocess
 import sys
@@ -14,7 +14,7 @@ import unittest
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_DIR / "scripts" / "prepare_distillation.py"
-FFMPEG = Path("/opt/homebrew/bin/ffmpeg")
+FFMPEG = Path(shutil.which("ffmpeg") or "ffmpeg")
 
 
 class PrepareDistillationCliTests(unittest.TestCase):
@@ -43,6 +43,8 @@ class PrepareDistillationCliTests(unittest.TestCase):
         return completed
 
     def make_video_fixture(self, duration: float = 2.0) -> None:
+        if not FFMPEG.is_file():
+            self.skipTest("本机没有 ffmpeg，跳过媒体集成夹具。")
         subprocess.run(
             [
                 str(FFMPEG),
@@ -70,23 +72,19 @@ class PrepareDistillationCliTests(unittest.TestCase):
         )
 
     def make_fake_parser(self) -> Path:
-        parser = self.root / "fake-parse-video"
+        parser = self.root / "fake-parse-video.py"
         parser.write_text(
-            "#!/bin/sh\n"
-            "output_dir=''\n"
-            "while [ \"$#\" -gt 0 ]; do\n"
-            "  if [ \"$1\" = '--output-dir' ]; then\n"
-            "    shift\n"
-            "    output_dir=$1\n"
-            "  fi\n"
-            "  shift\n"
-            "done\n"
-            "mkdir -p \"$output_dir\"\n"
-            f"cp {shlex.quote(str(self.fixture))} \"$output_dir/video.mp4\"\n"
-            "printf '%s\\n' '{\"title\":\"offline fixture\"}'\n",
+            "import json\n"
+            "from pathlib import Path\n"
+            "import shutil\n"
+            "import sys\n"
+            f"fixture = Path({str(self.fixture)!r})\n"
+            "output_dir = Path(sys.argv[sys.argv.index('--output-dir') + 1])\n"
+            "output_dir.mkdir(parents=True, exist_ok=True)\n"
+            "shutil.copy2(fixture, output_dir / 'video.mp4')\n"
+            "print(json.dumps({'title': 'offline fixture'}))\n",
             encoding="utf-8",
         )
-        parser.chmod(0o755)
         return parser
 
     def test_dry_run_accepts_supported_platform_links_without_browser_state(self) -> None:
@@ -347,14 +345,17 @@ class PrepareDistillationCliTests(unittest.TestCase):
 
     def test_sigterm_cleans_the_job_directory(self) -> None:
         self.make_video_fixture()
-        sleeper = self.root / "slow-ffprobe"
+        sleeper = self.root / "slow-ffprobe.py"
         sleeper.write_text(
-            "#!/bin/sh\n"
-            "trap 'exit 143' TERM\n"
-            "sleep 30\n",
+            "import time\n"
+            "time.sleep(30)\n",
             encoding="utf-8",
         )
-        sleeper.chmod(0o755)
+        popen_options = {}
+        if os.name == "nt":
+            popen_options["creationflags"] = getattr(
+                subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200
+            )
         process = subprocess.Popen(
             [
                 sys.executable,
@@ -374,11 +375,15 @@ class PrepareDistillationCliTests(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            **popen_options,
         )
         deadline = time.time() + 5
         while time.time() < deadline and not any(self.temp_root.glob("parse-video-*")):
             time.sleep(0.05)
-        process.send_signal(signal.SIGTERM)
+        if os.name == "nt":
+            process.send_signal(signal.CTRL_BREAK_EVENT)
+        else:
+            process.send_signal(signal.SIGTERM)
         process.communicate(timeout=5)
 
         self.assertEqual(process.returncode, 130)
