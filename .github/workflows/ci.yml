@@ -1,0 +1,119 @@
+name: Cross-platform CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-2025
+          - name: macOS ARM64
+            os: macos-15
+          - name: macOS Intel x64
+            os: macos-15-intel
+    runs-on: ${{ matrix.os }}
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Go tests
+        run: go test ./...
+
+      - name: Skill tests
+        run: python -m unittest discover -s skill/parse-video/tests -v
+
+      - name: Installer tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Build and smoke test Windows parser
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          go build -trimpath -ldflags "-s -w -X github.com/wujunwei928/parse-video/cmd.Version=ci-windows-x64" -o build/parse-video.exe .
+          .\build\parse-video.exe version
+          .\build\parse-video.exe --help
+
+      - name: Build and smoke test macOS parser
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          go build -trimpath -ldflags "-s -w -X github.com/wujunwei928/parse-video/cmd.Version=ci-${{ runner.arch }}" -o build/parse-video .
+          ./build/parse-video version
+          ./build/parse-video --help
+
+  windows-package:
+    name: Build Windows x64 candidate
+    runs-on: windows-2025
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Build parser
+        shell: pwsh
+        run: |
+          go build -trimpath -ldflags "-s -w -X github.com/wujunwei928/parse-video/cmd.Version=v1.0.0-rc.1+ci.windows-x64" -o build/parse-video.exe .
+          .\build\parse-video.exe version
+
+      - name: Build candidate package with pinned Python runtime
+        run: python tools/build_windows_package.py --binary build/parse-video.exe --download-python --output-dir dist
+
+      - name: Install package with bundled Python and run helper
+        shell: pwsh
+        run: |
+          Expand-Archive -Path dist/parse-video-v1.0.0-rc.1-windows-x64.zip -DestinationPath package
+          $root = Resolve-Path package/parse-video-v1.0.0-rc.1-windows-x64
+          $codexHome = Join-Path $PWD "测试 Codex Home"
+          & cmd /c "`"$root\install.cmd`" --codex-home `"$codexHome`" --json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & cmd /c "`"$codexHome\skills\parse-video\run.cmd`" --help"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$root\skill\parse-video\runtime\windows-x64\parse-video.exe" version
+
+      - name: Verify release manifest
+        shell: pwsh
+        run: |
+          $root = Resolve-Path package/parse-video-v1.0.0-rc.1-windows-x64
+          python tools/verify_manifest.py $root --json
+
+      - name: Upload candidate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: parse-video-v1.0.0-rc.1-windows-x64
+          path: dist/parse-video-v1.0.0-rc.1-windows-x64.zip
+          if-no-files-found: error

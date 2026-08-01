@@ -11,6 +11,7 @@ source_commit: ac2a71f
 | 类型 | 技术/框架 | 版本 | 证据来源 |
 |---|---|---|---|
 | 编程语言 | Go | 1.24.0 | `go.mod:go` |
+| Skill 运行助手 | Python 标准库 | 3.13（Windows 包内置） | `skill/parse-video/scripts/`、`tools/build_windows_package.py` |
 | Web 框架 | Gin | v1.11.0 | `go.mod:require` |
 | HTTP 客户端 | Resty | v2.16.5 | `go.mod:require` |
 | JSON 解析 | gjson | v1.18.0 | `go.mod:require` |
@@ -35,6 +36,10 @@ source_commit: ac2a71f
 | `resources/` | 静态资源（海报等） | 辅助 | `resources/` |
 | `.github/workflows/` | CI/CD 配置 | 辅助 | `.github/workflows/*.yml` |
 | `docs/` | 文档目录 | 辅助 | `docs/agents/`、`docs/superpowers/` |
+| `skill/parse-video/` | Codex Skill、三模式入口、跨平台路径、进程和离线测试 | 核心 | `skill/parse-video/SKILL.md` |
+| `tools/` | 安装/回滚/卸载、发布包构建与清单校验 | 核心 | `tools/*.py` |
+| `packaging/windows/` | Windows CMD 入口与候选包说明 | 辅助 | `packaging/windows/` |
+| `tests/` | 安装器和发布清单的系统边界测试 | 辅助 | `tests/*.py` |
 
 ## 启动入口
 
@@ -44,6 +49,8 @@ source_commit: ac2a71f
 | CLI 解析 | `cmd/parse.go:parseCmd` | `go run main.go parse "链接"` | `cmd/parse.go` |
 | CLI ID 解析 | `cmd/id.go:idCmd` | `go run main.go id --source douyin "ID"` | `cmd/id.go` |
 | 版本信息 | `cmd/version.go:versionCmd` | `go run main.go version` | `cmd/version.go` |
+| Skill 统一入口 | `skill/parse-video/scripts/parse_video.py` | `python3 ... download/understand/distill/doctor`；Windows 用 `run.cmd` | `skill/parse-video/scripts/parse_video.py` |
+| Windows 安装 | `tools/installer.py` | 候选包内双击 `install.cmd` | `tools/installer.py` |
 
 ## 核心模块
 
@@ -57,6 +64,8 @@ source_commit: ac2a71f
 | 统一响应 | `cmd/response.go` | API 响应格式（success/error） | `cmd/handlers.go`、`cmd/middleware.go` | 中 | `cmd/response.go` |
 | 媒体下载 | `cmd/download.go` | 视频/图集/封面/音乐文件下载 | `cmd/parse.go`、`cmd/id.go` | 低 | `cmd/download.go` |
 | 输出格式化 | `cmd/output.go` | text/JSON 输出 | `cmd/parse.go`、`cmd/id.go` | 低 | `cmd/output.go` |
+| 跨平台运行路径 | `skill/parse-video/scripts/runtime_paths.py` | 真实桌面/文档、`CODEX_HOME`、临时目录与工具目录 | Skill 三模式、doctor、依赖助手 | 中 | `runtime_paths.py` |
+| 安全交付与证据 | `download.py`、`prepare_distillation.py` | 临时下载、ffprobe 校验、证据生成和清理 | `parse_video.py` | 中 | `skill/parse-video/scripts/` |
 
 微博普通帖子由 `parser/weibo.go` 匿名读取公开状态数据：视频地址优先取高清流，图集仍保留原图；微博 CDN 下载仅补充公开站点 Referer，不使用 Cookie 或登录状态。
 

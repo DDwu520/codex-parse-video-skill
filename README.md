@@ -1,3 +1,20 @@
+# parse-video Codex Skill 跨平台分支
+
+本仓库基于 `wujunwei928/parse-video` 的 MIT 许可源码，增加了微博公开视频修复、Codex Skill 三模式（下载、理解、蒸馏）、跨平台安全路径、临时媒体清理、Windows x64 安装/回滚和候选包构建。
+
+当前发布状态：
+
+- macOS Apple Silicon：既有五个平台已完成真实验证；跨平台核心回归通过。
+- Windows x64：`v1.0.0-rc.1` 候选包已在本地交叉编译和离线测试，真实 Windows 与 GitHub Actions 尚未运行，不能称正式可用。
+- macOS Intel x64：待 CI 和真实对应环境验证。
+- 微信视频号：当前不支持。
+
+Codex Skill 位于 `skill/parse-video/`；Windows 候选包说明见 `packaging/README-WINDOWS.md`。候选包不读取浏览器 Cookie、不绕过登录或 DRM，也不启动上游默认 HTTP 服务。平台真实验收边界见 `skill/parse-video/references/platform-validation.md`。
+
+以下保留上游解析器原说明：
+
+---
+
    * [支持平台](#支持平台)
    * [安装](#安装)
    * [命令行使用](#命令行使用)

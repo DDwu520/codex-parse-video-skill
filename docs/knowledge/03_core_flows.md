@@ -156,3 +156,28 @@ confidence: high
 ### 未确认事项
 
 - 未确认各平台解析器内部 HTTP 请求的超时和重试策略。
+
+---
+
+## 流程：Codex Skill 三模式
+
+### 是否已确认
+
+- 状态：macOS 回归与离线夹具已确认；Windows 真实机器待确认
+- 证据来源：`skill/parse-video/scripts/parse_video.py`、`download.py`、`prepare_distillation.py`
+
+### 执行链路
+
+1. `runtime_paths.py` 解析当前系统、架构、`CODEX_HOME`、真实桌面/文档和隔离临时目录。
+2. 下载模式先在临时任务目录调用固定解析器，再用 ffprobe 确认可识别媒体流。
+3. 下载成功后生成跨 Windows 安全目录名，一条视频一个目录；失败、超时或零媒体不写桌面。
+4. 理解/蒸馏模式临时提取音频和均匀关键帧，生成带时间戳 ASR 与证据清单；完整 MP4/WAV 不长期保留。
+5. 理解模式报告完成后按精确 `cleanup_argv` 清理；蒸馏模式只保留 candidate-only 证据包。
+6. `doctor.py` 只读报告三模式依赖；`dependencies.py` 必须先展示来源、许可、体积和 SHA-256，只有显式 `--confirm-download` 才联网安装。
+
+### 安全边界
+
+- 不读取 Cookie、账号或浏览器登录态，不绕过验证码、付费、私密权限或 DRM。
+- 不启动默认 HTTP 服务。
+- Windows 子进程以独立进程组启动，超时/中断时终止进程树。
+- Windows V1 只批量下载；批量理解和蒸馏不在 V1 范围。

@@ -45,6 +45,8 @@ class RuntimePaths:
     runtime_dir: Path
     parser_binary: Path
     isolated_home: Path
+    tools_dir: Path
+    models_dir: Path
 
 
 def normalize_platform(value: str | None = None) -> str:
@@ -155,6 +157,8 @@ def resolve_runtime_paths(
         runtime_dir=runtime_dir,
         parser_binary=runtime_dir / binary_name,
         isolated_home=data_root / "isolated-home",
+        tools_dir=data_root / "tools" / platform_arch,
+        models_dir=data_root / "models",
     )
 
 

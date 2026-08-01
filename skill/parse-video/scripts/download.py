@@ -33,11 +33,14 @@ TEMP_ROOT = RUNTIME.temp_root
 
 def default_runtime_tool(name: str) -> Path:
     executable_name = f"{name}.exe" if RUNTIME.platform_name == "windows" else name
+    installed = RUNTIME.tools_dir / executable_name
     bundled = RUNTIME.runtime_dir / executable_name
     discovered = shutil.which(name)
+    if installed.is_file():
+        return installed
     if bundled.is_file():
         return bundled
-    return Path(discovered) if discovered else bundled
+    return Path(discovered) if discovered else installed
 
 
 FFPROBE = default_runtime_tool("ffprobe")
@@ -222,7 +225,7 @@ def deliver_media(media_dir: Path, output_root: Path, folder_name: str) -> Path:
     return destination
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="把公开视频下载到桌面的‘下载视频’文件夹")
     parser.add_argument("source", nargs="?", help="平台分享文本或公开链接")
     parser.add_argument("--binary", type=Path, default=BINARY, help="解析器路径")
@@ -232,11 +235,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--isolated-home", type=Path, default=ISOLATED_HOME)
     parser.add_argument("--timeout", type=int, default=900)
     parser.add_argument("--dry-run", action="store_true", help="只检查路径和命令，不联网或下载")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     binary = args.binary.expanduser().resolve()
     ffprobe = args.ffprobe.expanduser().resolve()
     output_dir = args.output_dir.expanduser().resolve()

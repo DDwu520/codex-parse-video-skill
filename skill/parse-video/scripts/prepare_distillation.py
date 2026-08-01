@@ -30,7 +30,7 @@ DEFAULT_EVIDENCE_ROOT = RUNTIME.evidence_root
 
 def default_whisper_model() -> Path:
     candidates = (
-        RUNTIME.codex_home / "parse-video" / "models" / "ggml-base.bin",
+        RUNTIME.models_dir / "ggml-base.bin",
         Path.home() / ".cache" / "whisper-cpp" / "ggml-base.bin",
     )
     return next((path for path in candidates if path.is_file()), candidates[0])
@@ -73,6 +73,18 @@ SUPPORTED_PLATFORM_DOMAINS = (
 )
 
 
+def default_runtime_tool(name: str) -> Path:
+    executable_name = f"{name}.exe" if RUNTIME.platform_name == "windows" else name
+    installed = RUNTIME.tools_dir / executable_name
+    bundled = RUNTIME.runtime_dir / executable_name
+    discovered = shutil.which(name)
+    if installed.is_file():
+        return installed
+    if bundled.is_file():
+        return bundled
+    return Path(discovered) if discovered else installed
+
+
 class UserInputError(RuntimeError):
     """用户输入或使用方式不符合 V1 契约。"""
 
@@ -96,12 +108,12 @@ def build_parser() -> argparse.ArgumentParser:
     prepare.add_argument("--evidence-root", type=Path, default=DEFAULT_EVIDENCE_ROOT)
     prepare.add_argument("--desktop-output-dir", type=Path, default=DEFAULT_DESKTOP_OUTPUT)
     prepare.add_argument("--binary", type=Path, default=FIXED_BINARY)
-    prepare.add_argument("--ffmpeg", type=Path, default=Path(shutil.which("ffmpeg") or "ffmpeg"))
-    prepare.add_argument("--ffprobe", type=Path, default=Path(shutil.which("ffprobe") or "ffprobe"))
+    prepare.add_argument("--ffmpeg", type=Path, default=default_runtime_tool("ffmpeg"))
+    prepare.add_argument("--ffprobe", type=Path, default=default_runtime_tool("ffprobe"))
     prepare.add_argument(
         "--whisper-cli",
         type=Path,
-        default=Path(shutil.which("whisper-cli") or "whisper-cli"),
+        default=default_runtime_tool("whisper-cli"),
     )
     prepare.add_argument("--whisper-model", type=Path, default=DEFAULT_WHISPER_MODEL)
     prepare.add_argument("--max-duration-seconds", type=float, default=3600.0)
@@ -164,7 +176,29 @@ def build_child_environment(job_dir: Path) -> dict[str, str]:
 
 def dry_run_result(args: argparse.Namespace, source_url: str | None) -> dict[str, object]:
     synthetic_job = args.temp_root.resolve() / "parse-video-dry-run"
-    environment_keys = ["HOME", "LANG", "LC_ALL", "PATH", "TMPDIR"]
+    if RUNTIME.platform_name == "windows":
+        environment_keys = [
+            "COMSPEC",
+            "HOME",
+            "PATH",
+            "PATHEXT",
+            "PYTHONIOENCODING",
+            "PYTHONUTF8",
+            "SystemRoot",
+            "TEMP",
+            "TMP",
+            "USERPROFILE",
+        ]
+    else:
+        environment_keys = [
+            "HOME",
+            "LANG",
+            "LC_ALL",
+            "PATH",
+            "PYTHONIOENCODING",
+            "PYTHONUTF8",
+            "TMPDIR",
+        ]
     command = None
     if source_url:
         command = executable_command(

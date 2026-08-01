@@ -29,6 +29,8 @@ __pycache__/
 *.py[cod]
 build/
 dist/
+/dist*/
 packages/
+skill/parse-video/runtime/
 # Visual Companion mockups
 .superpowers/

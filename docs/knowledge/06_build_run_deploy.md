@@ -58,6 +58,10 @@ go test ./cmd/...
 
 # Pre-commit 检查
 pre-commit run --all-files
+
+# Skill 与发布工具
+python3 -m unittest discover -s skill/parse-video/tests -v
+python3 -m unittest discover -s tests -v
 ```
 
 ## 构建命令
@@ -68,6 +72,15 @@ go build -o parse-video .
 
 # 构建（精简体积）
 go build -ldflags="-s -w" -o parse-video .
+
+# Windows x64 解析器（从 macOS/Linux 交叉编译）
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -o parse-video.exe .
+
+# Windows 候选包；Python 归档必须先固定来源并核对 SHA-256
+python3 tools/build_windows_package.py \
+  --binary parse-video.exe \
+  --python-archive /path/to/python-embed-amd64.zip \
+  --output-dir dist
 ```
 
 ## 部署方式

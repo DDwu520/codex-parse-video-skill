@@ -14,12 +14,17 @@ description: 处理抖音、快手、小红书、哔哩哔哩、微博、西瓜�
 当用户说“下载”“保存”“把视频放到桌面”时，维持原行为：
 
 ```bash
-python3 scripts/download.py "用户提供的分享文本或链接"
+python3 scripts/parse_video.py download "用户提供的分享文本或链接"
 ```
+
+Windows 候选包使用 `run.cmd download "用户提供的分享文本或链接"`，不要求用户自行选择 Python。
+
+用户一次给出多条链接且只要求下载时，使用 `batch-download` 顺序处理；每条任务独立临时目录、独立交付目录，单条失败不得污染其他结果。V1 不批量理解或批量蒸馏。
 
 固定输出目录：
 
-`/Users/dd/Desktop/下载视频`
+- macOS：`~/Desktop/下载视频`
+- Windows：系统登记的真实桌面目录下 `下载视频`
 
 下载完成后检查并报告实际视频路径、文件大小、时长、分辨率和容器格式。需要判断平台水印时，只抽查前、中、后三处画面，并明确这是抽样结论。
 
@@ -28,9 +33,8 @@ python3 scripts/download.py "用户提供的分享文本或链接"
 当用户想知道视频讲了什么，但没有要求保存完整视频时：
 
 ```bash
-python3 scripts/prepare_distillation.py prepare \
+python3 scripts/parse_video.py understand \
   "用户提供的分享文本或链接" \
-  --mode understand \
   --quality standard
 ```
 
@@ -55,15 +59,15 @@ python3 scripts/prepare_distillation.py prepare \
 当用户要求把视频中的方法做成 Skill：
 
 ```bash
-python3 scripts/prepare_distillation.py prepare \
+python3 scripts/parse_video.py distill \
   "用户提供的分享文本或链接" \
-  --mode distill \
   --quality high
 ```
 
 证据包默认保存到：
 
-`/Users/dd/Documents/蒸馏！！！/evidence/parse-video`
+- macOS：`~/Documents/Parse Video/证据包`
+- Windows：系统登记的真实“文档”目录下 `Parse Video\证据包`
 
 完整 MP4 和临时 WAV 在准备完成后删除；长期只保留 `manifest.json`、原始解析器输出、带时间戳 ASR、关键帧、联系表、画面索引和 `distillation-input.md`。
 
@@ -95,15 +99,14 @@ python3 scripts/prepare_distillation.py prepare \
 普通下载：
 
 ```bash
-python3 scripts/download.py --dry-run
+python3 scripts/parse_video.py download --dry-run
 ```
 
 理解路由：
 
 ```bash
-python3 scripts/prepare_distillation.py prepare \
+python3 scripts/parse_video.py understand \
   "https://v.kuaishou.com/example/" \
-  --mode understand \
   --dry-run
 ```
 
@@ -124,3 +127,4 @@ python3 -m unittest discover -s tests -v
 - 不启动默认 HTTP 服务；该服务绑定和认证边界不满足要求。
 - 不把视频本体写入 Obsidian，只同步路径、状态和脱敏验证结论。
 - 若固定二进制、ffmpeg、ffprobe、whisper-cli 或本地模型缺失，停止并报告，不从网络自动安装或替换。
+- Windows 用户明确要求补依赖时，先运行 `run.cmd dependencies plan all` 展示来源、许可、体积和 SHA-256；只有用户再次确认后，才允许执行带 `--confirm-download` 的安装命令。

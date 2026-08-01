@@ -288,6 +288,10 @@ class PrepareDistillationCliTests(unittest.TestCase):
         self.assertFalse(any(self.temp_root.glob("parse-video-*")))
 
     def test_local_asr_produces_timestamped_srt_and_json(self) -> None:
+        whisper_cli = shutil.which("whisper-cli")
+        model = Path.home() / ".cache" / "whisper-cpp" / "ggml-base.bin"
+        if not whisper_cli or not model.is_file():
+            self.skipTest("本机没有已验证的 whisper-cli 或本地模型。")
         self.make_video_fixture()
         completed = self.run_cli(
             "prepare",
@@ -301,6 +305,10 @@ class PrepareDistillationCliTests(unittest.TestCase):
             str(self.temp_root),
             "--min-free-bytes",
             "0",
+            "--whisper-cli",
+            whisper_cli,
+            "--whisper-model",
+            str(model),
         )
         data = json.loads(completed.stdout)
         evidence_dir = Path(data["evidence_dir"])

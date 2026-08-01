@@ -66,6 +66,14 @@ class RuntimePathTests(unittest.TestCase):
             paths.temp_root,
             Path("C:/Users/张 三/AppData/Local/Temp/codex-parse-video"),
         )
+        self.assertEqual(
+            paths.tools_dir,
+            Path("D:/Codex Home/parse-video/tools/windows-x64"),
+        )
+        self.assertEqual(
+            paths.models_dir,
+            Path("D:/Codex Home/parse-video/models"),
+        )
 
     def test_macos_defaults_are_user_relative_not_hardcoded(self) -> None:
         import runtime_paths
@@ -97,8 +105,10 @@ class RuntimePathTests(unittest.TestCase):
             paths.download_root,
             paths.evidence_root,
             paths.isolated_home,
+            paths.tools_dir,
+            paths.models_dir,
         ):
-            self.assertNotIn("/Users/dd", str(value))
+            self.assertNotIn("/Users/private-user", str(value))
 
     def test_unsupported_platform_or_architecture_is_rejected(self) -> None:
         import runtime_paths
