@@ -11,6 +11,8 @@
 
 Codex Skill 位于 `skill/parse-video/`；Windows 候选包说明见 `packaging/README-WINDOWS.md`。候选包不读取浏览器 Cookie、不绕过登录或 DRM，也不启动上游默认 HTTP 服务。平台真实验收边界见 `skill/parse-video/references/platform-validation.md`。
 
+准备参加 Windows 真实机器验收，请先阅读 [`TESTING-WINDOWS-RC.md`](TESTING-WINDOWS-RC.md)。测试结果请通过仓库的“Windows RC 验收”问题模板提交；报告不得包含用户名、完整本机路径、Cookie、Token 或私密视频链接。
+
 以下保留上游解析器原说明：
 
 ---

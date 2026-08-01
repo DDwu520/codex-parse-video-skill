@@ -1,0 +1,81 @@
+name: Windows RC 验收
+description: 提交 Windows 10/11 x64 候选版的安装、三模式和清理结果
+title: "[Windows RC 验收] "
+labels:
+  - windows-rc
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢参与真实机器验收。请先阅读 `TESTING-WINDOWS-RC.md`，不要提交 Cookie、Token、用户名、完整个人路径或私密链接。
+  - type: dropdown
+    id: system
+    attributes:
+      label: Windows 版本
+      options:
+        - Windows 11 x64
+        - Windows 10 x64
+        - 其他或不确定
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: 系统版本号
+      description: 例如 23H2 或 24H2；不知道可填“不确定”。
+    validations:
+      required: true
+  - type: checkboxes
+    id: setup
+    attributes:
+      label: 安装与基础检查
+      options:
+        - label: "`verify.cmd` 报告 61 个文件全部一致"
+        - label: "`install.cmd` 成功且未要求管理员权限"
+        - label: "`doctor.cmd` 能正常运行"
+        - label: 依赖计划未在确认前自动下载
+  - type: checkboxes
+    id: modes
+    attributes:
+      label: 已实际测试的能力
+      options:
+        - label: 抖音下载
+        - label: 抖音理解
+        - label: 抖音蒸馏
+        - label: 微博下载
+        - label: 微博理解
+        - label: 微博蒸馏
+        - label: B 站下载
+        - label: 小红书下载
+        - label: 快手下载
+  - type: textarea
+    id: results
+    attributes:
+      label: 实际结果
+      description: 说明成功或失败、输出目录是否正确，以及失败/中断后是否残留完整 MP4/WAV。请脱敏。
+      placeholder: 平台、模式、退出状态、生成文件类型、清理结果……
+    validations:
+      required: true
+  - type: dropdown
+    id: smartscreen
+    attributes:
+      label: SmartScreen 情况
+      options:
+        - 没有提示
+        - 出现提示但允许继续
+        - 被组织策略阻止
+        - 未测试或不确定
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 脱敏日志或截图
+      description: 不要包含 Cookie、Token、用户名、完整个人路径或私密链接。
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 内容与隐私确认
+      options:
+        - label: 我只测试了有权处理的公开内容，并已移除反馈中的敏感信息。
+          required: true
