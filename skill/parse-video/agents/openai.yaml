@@ -1,0 +1,4 @@
+interface:
+  display_name: "Parse Video 视频助手"
+  short_description: "直接处理公开视频链接，可下载、理解或准备蒸馏证据"
+  default_prompt: "请使用 $parse-video 处理这条公开视频链接；我可以选择下载、理解总结或蒸馏。理解与蒸馏不需要打开浏览器或登录。"
