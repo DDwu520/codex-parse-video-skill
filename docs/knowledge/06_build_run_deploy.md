@@ -81,6 +81,24 @@ python3 tools/build_windows_package.py \
   --binary parse-video.exe \
   --python-archive /path/to/python-embed-amd64.zip \
   --output-dir dist
+
+# macOS 候选包必须在对应架构 runner 上原生构建；PyInstaller 依赖使用带哈希锁文件
+python3 -m pip install --require-hashes -r tools/requirements-macos-build.txt
+python3 -m PyInstaller --clean --noconfirm --onedir \
+  --name parse-video-helper \
+  --distpath build/helper-dist \
+  --workpath build/helper-work \
+  --specpath build \
+  --paths skill/parse-video/scripts \
+  --paths tools \
+  tools/macos_entry.py
+python3 tools/build_macos_package.py \
+  --target macos-arm64 \
+  --binary build/parse-video \
+  --helper-bundle build/helper-dist/parse-video-helper \
+  --python-license /path/to/CPython-LICENSE.txt \
+  --pyinstaller-license /path/to/PyInstaller-COPYING.txt \
+  --output-dir dist
 ```
 
 ## 部署方式
@@ -107,6 +125,7 @@ docker run -d -p 8080:8080 \
 **CI/CD**（GitHub Actions）：
 - `.github/workflows/go.yml`：push/PR 到 main 时自动 build + test
 - `.github/workflows/docker.yml`：push 到 main 时自动构建多架构 Docker 镜像并推送到 Docker Hub
+- `.github/workflows/ci.yml`：Windows x64、macOS ARM64、macOS Intel x64 回归；另在两种 macOS 原生 runner 上构建自包含候选包并验证安装和清单
 
 **Docker 镜像特性**：
 - 多阶段构建：`golang:alpine` 编译 → `scratch` 运行

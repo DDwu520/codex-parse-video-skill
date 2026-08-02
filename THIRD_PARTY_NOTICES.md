@@ -8,6 +8,8 @@ This repository is derived from `wujunwei928/parse-video` and retains its MIT Li
 
 The Windows release package includes the official CPython 3.13.12 embeddable x64 runtime from `python.org`. Its `LICENSE.txt` is included alongside the runtime. The build script pins the official URL and verifies SHA-256 before packaging.
 
+The macOS candidate packages include a CPython 3.13.12 runtime collected into an architecture-specific helper by PyInstaller 6.21.0. Each package includes the CPython license and PyInstaller `COPYING.txt` under `licenses/`. PyInstaller is used only as a pinned build tool; its bundled bootloader exception applies to generated executables.
+
 ## FFmpeg, whisper.cpp and speech models
 
 The current Windows RC package does not bundle FFmpeg, whisper.cpp, or a Whisper speech model. Its optional dependency helper can download a pinned Gyan FFmpeg essentials build (GPLv3), the official whisper.cpp Windows x64 release (MIT), and the `ggml-base.bin` model after explicit user confirmation and SHA-256 verification. These files remain outside the release ZIP and retain their own upstream terms.

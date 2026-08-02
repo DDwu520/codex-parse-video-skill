@@ -87,7 +87,7 @@ jobs:
       - name: Build parser
         shell: pwsh
         run: |
-          go build -trimpath -ldflags "-s -w -X github.com/wujunwei928/parse-video/cmd.Version=v1.0.0-rc.2+ci.windows-x64" -o build/parse-video.exe .
+          go build -trimpath -ldflags "-s -w -X github.com/wujunwei928/parse-video/cmd.Version=v1.0.0-rc.3+ci.windows-x64" -o build/parse-video.exe .
           .\build\parse-video.exe version
 
       - name: Build candidate package with pinned Python runtime
@@ -96,8 +96,8 @@ jobs:
       - name: Install package with bundled Python and run helper
         shell: pwsh
         run: |
-          Expand-Archive -Path dist/parse-video-v1.0.0-rc.2-windows-x64.zip -DestinationPath package
-          $root = Resolve-Path package/parse-video-v1.0.0-rc.2-windows-x64
+          Expand-Archive -Path dist/parse-video-v1.0.0-rc.3-windows-x64.zip -DestinationPath package
+          $root = Resolve-Path package/parse-video-v1.0.0-rc.3-windows-x64
           $codexHome = Join-Path $PWD "测试 Codex Home"
           & cmd /c "`"$root\install.cmd`" --codex-home `"$codexHome`" --json"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -108,12 +108,104 @@ jobs:
       - name: Verify release manifest
         shell: pwsh
         run: |
-          $root = Resolve-Path package/parse-video-v1.0.0-rc.2-windows-x64
+          $root = Resolve-Path package/parse-video-v1.0.0-rc.3-windows-x64
           python tools/verify_manifest.py $root --json
 
       - name: Upload candidate artifact
         uses: actions/upload-artifact@v4
         with:
-          name: parse-video-v1.0.0-rc.2-windows-x64
-          path: dist/parse-video-v1.0.0-rc.2-windows-x64.zip
+          name: parse-video-v1.0.0-rc.3-windows-x64
+          path: dist/parse-video-v1.0.0-rc.3-windows-x64.zip
+          if-no-files-found: error
+
+  macos-package:
+    name: Build ${{ matrix.name }} candidate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple Silicon
+            os: macos-15
+            target: macos-arm64
+          - name: macOS Intel x64
+            os: macos-15-intel
+            target: macos-x64
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13.12"
+
+      - name: Install pinned macOS build tools
+        run: python -m pip install --require-hashes -r tools/requirements-macos-build.txt
+
+      - name: Build self-contained helper
+        shell: bash
+        run: |
+          mkdir -p build
+          python -m PyInstaller \
+            --clean \
+            --noconfirm \
+            --onedir \
+            --name parse-video-helper \
+            --distpath build/helper-dist \
+            --workpath build/helper-work \
+            --specpath build \
+            --paths skill/parse-video/scripts \
+            --paths tools \
+            tools/macos_entry.py
+          build/helper-dist/parse-video-helper/parse-video-helper --help
+
+      - name: Build native parser
+        shell: bash
+        run: |
+          go build -trimpath -ldflags "-s -w -X github.com/wujunwei928/parse-video/cmd.Version=v1.0.0-rc.3+ci.${{ matrix.target }}" -o build/parse-video .
+          build/parse-video version
+
+      - name: Build candidate package
+        shell: bash
+        run: |
+          python_license=$(python -c 'from pathlib import Path; import sys; print(next((Path(sys.prefix) / "lib").glob("python*/LICENSE.txt")))')
+          pyinstaller_license=$(python -c 'from importlib.metadata import distribution; from pathlib import Path; root=Path(distribution("pyinstaller").locate_file("")); print(next(root.glob("pyinstaller-*.dist-info/licenses/COPYING.txt")))')
+          python tools/build_macos_package.py \
+            --target "${{ matrix.target }}" \
+            --binary build/parse-video \
+            --helper-bundle build/helper-dist/parse-video-helper \
+            --python-license "$python_license" \
+            --pyinstaller-license "$pyinstaller_license" \
+            --output-dir dist
+
+      - name: Install package and run bundled helper
+        shell: bash
+        run: |
+          unzip -q "dist/parse-video-v1.0.0-rc.3-${{ matrix.target }}.zip" -d package
+          root="$PWD/package/parse-video-v1.0.0-rc.3-${{ matrix.target }}"
+          codex_home="$PWD/测试 Codex Home"
+          "$root/verify.command"
+          "$root/install.command" --codex-home "$codex_home" --json
+          "$codex_home/skills/parse-video/run.sh" --help
+          "$root/skill/parse-video/runtime/${{ matrix.target }}/parse-video" version
+          file "$root/skill/parse-video/runtime/${{ matrix.target }}/parse-video"
+          file "$root/skill/parse-video/runtime/${{ matrix.target }}/helper/parse-video-helper"
+
+      - name: Upload candidate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: parse-video-v1.0.0-rc.3-${{ matrix.target }}
+          path: dist/parse-video-v1.0.0-rc.3-${{ matrix.target }}.zip
           if-no-files-found: error

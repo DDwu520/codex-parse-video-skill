@@ -5,7 +5,9 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 import zipfile
 
 
@@ -26,10 +28,18 @@ class DependencyCliTests(unittest.TestCase):
         )
 
     def test_plan_discloses_sources_hashes_sizes_and_makes_no_writes(self) -> None:
-        completed = self.run_cli("plan", "all", "--json")
+        import dependencies
 
-        self.assertEqual(completed.returncode, 0, completed.stderr)
-        report = json.loads(completed.stdout)
+        with tempfile.TemporaryDirectory(prefix="parse-video-dependency-plan-") as temp:
+            root = Path(temp)
+            runtime = SimpleNamespace(
+                platform_name="windows",
+                architecture="x64",
+                tools_dir=root / "tools",
+                models_dir=root / "models",
+            )
+            with patch.object(dependencies, "RUNTIME", runtime):
+                report = dependencies.plan("all")
         self.assertEqual(len(report["downloads"]), 3)
         self.assertTrue(report["requires_explicit_confirmation"])
         self.assertFalse(report["writes_performed"])
@@ -37,6 +47,23 @@ class DependencyCliTests(unittest.TestCase):
             self.assertTrue(item["url"].startswith("https://"))
             self.assertRegex(item["sha256"], r"^[0-9a-f]{64}$")
             self.assertGreater(item["bytes"], 0)
+
+    def test_macos_plan_never_offers_windows_binaries(self) -> None:
+        import dependencies
+
+        runtime = SimpleNamespace(
+            platform_name="macos",
+            architecture="arm64",
+            tools_dir=Path("/tmp/tools"),
+            models_dir=Path("/tmp/models"),
+        )
+        with patch.object(dependencies, "RUNTIME", runtime):
+            report = dependencies.plan("all")
+
+        self.assertEqual(report["status"], "unsupported")
+        self.assertEqual(report["downloads"], [])
+        self.assertFalse(report["writes_performed"])
+        self.assertIn("macOS", report["message"])
 
     def test_install_refuses_to_download_without_explicit_confirmation(self) -> None:
         completed = self.run_cli("install", "all", "--json")

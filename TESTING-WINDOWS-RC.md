@@ -1,6 +1,6 @@
 # Windows RC 公开验收指南
 
-感谢帮助验收 `parse-video v1.0.0-rc.2`。这是 Windows x64 候选版，不是正式稳定版。
+感谢帮助验收 `parse-video v1.0.0-rc.3`。这是 Windows x64 候选版，不是正式稳定版。
 
 ## 适用范围
 
@@ -11,19 +11,15 @@
 
 ## 下载与完整性
 
-从 GitHub Releases 下载 `parse-video-v1.0.0-rc.2-windows-x64.zip`，完整解压后运行 `verify.cmd`。
+从 GitHub Releases 下载 `parse-video-v1.0.0-rc.3-windows-x64.zip`，完整解压后运行 `verify.cmd`。
 
-发布包 SHA-256：
-
-```text
-0576bbafb24af3c73bf8b7a8f81241158ed365af5a4f9dc0d3b65835707c49f7
-```
+发布包 SHA-256 以 `v1.0.0-rc.3` 发布页登记值为准；不要沿用 rc.2 的校验值。
 
 如果 `verify.cmd` 报告缺失、额外文件或哈希不一致，请停止安装并提交反馈。
 
 ## 最小验收顺序
 
-1. 双击 `verify.cmd`，确认 61 个登记文件全部一致。
+1. 双击 `verify.cmd`，确认清单登记文件全部一致。
 2. 双击 `install.cmd`，确认不要求管理员权限、不修改系统 PATH。
 3. 双击 `doctor.cmd`，记录解析器、FFmpeg、Whisper 和模型状态。
 4. 在命令提示符中运行 `parse-video.cmd dependencies plan all`，确认它只展示来源、许可、大小和校验值，不自动联网下载。

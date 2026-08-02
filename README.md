@@ -4,12 +4,12 @@
 
 当前发布状态：
 
-- macOS Apple Silicon：既有五个平台已完成真实验证；跨平台核心回归通过。
-- Windows x64：`v1.0.0-rc.2` 候选包已完成本地交叉编译、离线测试和包清单复核；真实 Windows 尚未验收，不能称正式可用。
-- macOS Intel x64：待 CI 和真实对应环境验证。
+- macOS Apple Silicon：既有五个平台已完成真实验证；自包含候选包构建已进入 CI 验证。
+- Windows x64：`v1.0.0-rc.3` 统一候选包已进入 CI 重建；真实 Windows 尚未验收，不能称正式可用。
+- macOS Intel x64：自包含候选包构建已进入 CI 验证；真实 Intel Mac 尚未验收。
 - 微信视频号：当前不支持。
 
-Codex Skill 位于 `skill/parse-video/`；Windows 候选包说明见 `packaging/README-WINDOWS.md`。候选包不读取浏览器 Cookie、不绕过登录或 DRM，也不启动上游默认 HTTP 服务。平台真实验收边界见 `skill/parse-video/references/platform-validation.md`。
+Codex Skill 位于 `skill/parse-video/`；候选包说明见 `packaging/README-WINDOWS.md` 和 `packaging/README-MACOS.md`。候选包不读取浏览器 Cookie、不绕过登录或 DRM，也不启动上游默认 HTTP 服务。平台真实验收边界见 `skill/parse-video/references/platform-validation.md`。
 
 准备参加 Windows 真实机器验收，请先阅读 [`TESTING-WINDOWS-RC.md`](TESTING-WINDOWS-RC.md)。测试结果请通过仓库的“Windows RC 验收”问题模板提交；报告不得包含用户名、完整本机路径、Cookie、Token 或私密视频链接。
 

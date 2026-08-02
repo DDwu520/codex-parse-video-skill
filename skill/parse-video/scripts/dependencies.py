@@ -71,6 +71,18 @@ def requested_dependencies(component: str) -> tuple[Dependency, ...]:
 
 
 def plan(component: str) -> dict[str, object]:
+    if RUNTIME.platform_name != "windows" or RUNTIME.architecture != "x64":
+        return {
+            "status": "unsupported",
+            "component": component,
+            "platform": RUNTIME.platform_name,
+            "architecture": RUNTIME.architecture,
+            "downloads": [],
+            "estimated_download_bytes": 0,
+            "requires_explicit_confirmation": False,
+            "writes_performed": False,
+            "message": "macOS 候选版当前不提供自动依赖安装，不会下载 Windows 二进制。请先使用 doctor 检查本机已有 FFmpeg 和 Whisper。",
+        }
     dependencies = requested_dependencies(component)
     return {
         "status": "plan",

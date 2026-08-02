@@ -18,6 +18,7 @@ source_commit: ac2a71f
 | Basic Auth | `cmd/middleware.go:basicAuthMiddleware` | 认证绕过风险 | 豁免路径列表 | 中 | `cmd/middleware.go:197-217` |
 | 速率限制 | `cmd/middleware.go:rateLimitMiddleware` | 限流过严/过松 | RPM 默认值、清理周期 | 中 | `cmd/middleware.go:158-176` |
 | 统一响应格式 | `cmd/response.go` | 错误码变化破坏客户端 | 错误码常量名 | 中 | `cmd/response.go:10-17` |
+| 候选包构建 | `tools/build_*_package.py`、`packaging/`、`.github/workflows/ci.yml` | 架构错配、运行时缺失或清单失真会导致公开包不可用 | 架构、运行时许可证、安装/回滚、清单与 CI 产物 | 中 | `tools/`、`packaging/`、`.github/workflows/ci.yml` |
 
 ## 禁止事项
 
@@ -56,6 +57,7 @@ source_commit: ac2a71f
 | 新增平台解析器 | 仅新平台 | 该平台解析 | `02_project_map.md`、`99_global_index.md` |
 | `Dockerfile` | 部署 | 构建和运行 | `06_build_run_deploy.md` |
 | 环境变量 | 配置 | 对应功能 | `02_project_map.md`、`06_build_run_deploy.md` |
+| 候选包构建或安装入口 | macOS/Windows 分享用户 | 双架构构建、包内安装、清单校验、错误架构拒绝 | `02_project_map.md`、`06_build_run_deploy.md`、`05_change_safety.md` |
 
 ## 知识库更新规则
 

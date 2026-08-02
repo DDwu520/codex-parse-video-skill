@@ -143,7 +143,7 @@ def build(args: argparse.Namespace) -> Path:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="构建 Windows x64 parse-video 候选包")
-    parser.add_argument("--version", default="v1.0.0-rc.2")
+    parser.add_argument("--version", default="v1.0.0-rc.3")
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--python-archive", type=Path)
     parser.add_argument("--download-python", action="store_true")

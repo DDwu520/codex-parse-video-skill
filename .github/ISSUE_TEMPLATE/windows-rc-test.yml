@@ -30,7 +30,7 @@ body:
     attributes:
       label: 安装与基础检查
       options:
-        - label: "`verify.cmd` 报告 61 个文件全部一致"
+        - label: "`verify.cmd` 报告清单登记文件全部一致"
         - label: "`install.cmd` 成功且未要求管理员权限"
         - label: "`doctor.cmd` 能正常运行"
         - label: 依赖计划未在确认前自动下载

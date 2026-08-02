@@ -113,6 +113,24 @@ class RuntimePathTests(unittest.TestCase):
         ):
             self.assertNotIn("/Users/private-user", str(value))
 
+    def test_bundled_launcher_can_set_the_installed_skill_directory(self) -> None:
+        import runtime_paths
+
+        installed = Path("/Users/another-user/.codex/skills/parse-video")
+        paths = runtime_paths.resolve_runtime_paths(
+            platform_name="macos",
+            architecture="arm64",
+            home=Path("/Users/another-user"),
+            environ={"PARSE_VIDEO_SKILL_DIR": str(installed)},
+            temp_dir=Path("/private/tmp"),
+        )
+
+        self.assertEqual(paths.skill_dir, installed)
+        self.assertEqual(
+            paths.parser_binary,
+            installed / "runtime" / "macos-arm64" / "parse-video",
+        )
+
     def test_unsupported_platform_or_architecture_is_rejected(self) -> None:
         import runtime_paths
 

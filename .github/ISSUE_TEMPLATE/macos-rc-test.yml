@@ -1,0 +1,76 @@
+name: macOS RC 验收
+description: 提交 Apple Silicon 或 Intel Mac 候选版的安装、三模式和清理结果
+title: "[macOS RC 验收] "
+labels:
+  - macos-rc
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢参与真实机器验收。请先阅读 `TESTING-MACOS-RC.md`，不要提交 Cookie、Token、用户名、完整个人路径或私密链接。
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: Mac 处理器
+      options:
+        - Apple Silicon（M1/M2/M3/M4）
+        - Intel x64
+        - 不确定
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: macOS 版本
+      description: 例如 macOS 15.6；不知道可填“不确定”。
+    validations:
+      required: true
+  - type: checkboxes
+    id: setup
+    attributes:
+      label: 安装与基础检查
+      options:
+        - label: ZIP 的 SHA-256 与发布页一致
+        - label: "`verify.command` 报告清单全部一致"
+        - label: "`install.command` 成功且未要求管理员权限"
+        - label: "`doctor.command` 能正常运行"
+        - label: 未预装 Python 时自包含助手仍可运行
+  - type: checkboxes
+    id: modes
+    attributes:
+      label: 已实际测试的能力
+      options:
+        - label: 下载
+        - label: 理解
+        - label: 蒸馏
+        - label: 回滚或卸载
+  - type: textarea
+    id: results
+    attributes:
+      label: 实际结果
+      description: 说明平台、模式、输出目录、临时文件清理和失败情况。请脱敏。
+    validations:
+      required: true
+  - type: dropdown
+    id: gatekeeper
+    attributes:
+      label: Gatekeeper 情况
+      options:
+        - 没有提示
+        - 出现提示并通过系统设置允许
+        - 被组织策略阻止
+        - 未测试或不确定
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 脱敏日志或截图
+      description: 不要包含 Cookie、Token、用户名、完整个人路径或私密链接。
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 内容与隐私确认
+      options:
+        - label: 我只测试了有权处理的公开内容，并已移除反馈中的敏感信息。
+          required: true

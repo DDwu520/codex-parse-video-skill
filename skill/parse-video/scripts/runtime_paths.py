@@ -125,7 +125,12 @@ def resolve_runtime_paths(
 
     environment = dict(os.environ if environ is None else environ)
     user_home = (home or Path.home()).expanduser()
-    root = (skill_dir or Path(__file__).resolve().parents[1]).resolve()
+    configured_skill_dir = environment.get("PARSE_VIDEO_SKILL_DIR")
+    root = (
+        skill_dir
+        or (Path(configured_skill_dir).expanduser() if configured_skill_dir else None)
+        or Path(__file__).resolve().parents[1]
+    ).resolve()
     codex_home = Path(environment.get("CODEX_HOME", str(user_home / ".codex"))).expanduser()
 
     if system == "windows":

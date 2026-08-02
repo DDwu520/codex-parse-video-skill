@@ -19,6 +19,8 @@ python3 scripts/parse_video.py download "用户提供的分享文本或链接"
 
 Windows 候选包使用 `run.cmd download "用户提供的分享文本或链接"`，不要求用户自行选择 Python。
 
+macOS 候选包使用 `run.sh download "用户提供的分享文本或链接"`；包内自带运行助手，不要求用户预装 Python。
+
 用户一次给出多条链接且只要求下载时，使用 `batch-download` 顺序处理；每条任务独立临时目录、独立交付目录，单条失败不得污染其他结果。V1 不批量理解或批量蒸馏。
 
 固定输出目录：

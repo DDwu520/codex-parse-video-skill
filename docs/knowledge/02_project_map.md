@@ -11,7 +11,7 @@ source_commit: ac2a71f
 | 类型 | 技术/框架 | 版本 | 证据来源 |
 |---|---|---|---|
 | 编程语言 | Go | 1.24.0 | `go.mod:go` |
-| Skill 运行助手 | Python 标准库 | 3.13（Windows 包内置） | `skill/parse-video/scripts/`、`tools/build_windows_package.py` |
+| Skill 运行助手 | Python 标准库 | 3.13.12（Windows 内嵌；macOS 由 PyInstaller 6.21.0 收集） | `skill/parse-video/scripts/`、`tools/build_*_package.py` |
 | Web 框架 | Gin | v1.11.0 | `go.mod:require` |
 | HTTP 客户端 | Resty | v2.16.5 | `go.mod:require` |
 | JSON 解析 | gjson | v1.18.0 | `go.mod:require` |
@@ -39,6 +39,7 @@ source_commit: ac2a71f
 | `skill/parse-video/` | Codex Skill、三模式入口、跨平台路径、进程和离线测试 | 核心 | `skill/parse-video/SKILL.md` |
 | `tools/` | 安装/回滚/卸载、发布包构建与清单校验 | 核心 | `tools/*.py` |
 | `packaging/windows/` | Windows CMD 入口与候选包说明 | 辅助 | `packaging/windows/` |
+| `packaging/macos/` | macOS COMMAND 入口与双架构候选包说明 | 辅助 | `packaging/macos/` |
 | `tests/` | 安装器和发布清单的系统边界测试 | 辅助 | `tests/*.py` |
 
 ## 启动入口
@@ -49,8 +50,9 @@ source_commit: ac2a71f
 | CLI 解析 | `cmd/parse.go:parseCmd` | `go run main.go parse "链接"` | `cmd/parse.go` |
 | CLI ID 解析 | `cmd/id.go:idCmd` | `go run main.go id --source douyin "ID"` | `cmd/id.go` |
 | 版本信息 | `cmd/version.go:versionCmd` | `go run main.go version` | `cmd/version.go` |
-| Skill 统一入口 | `skill/parse-video/scripts/parse_video.py` | `python3 ... download/understand/distill/doctor`；Windows 用 `run.cmd` | `skill/parse-video/scripts/parse_video.py` |
+| Skill 统一入口 | `skill/parse-video/scripts/parse_video.py` | 源码用 `python3`；Windows 用 `run.cmd`；macOS 候选包用 `run.sh` 与自包含助手 | `skill/parse-video/scripts/parse_video.py` |
 | Windows 安装 | `tools/installer.py` | 候选包内双击 `install.cmd` | `tools/installer.py` |
+| macOS 安装 | `tools/macos_entry.py` | 候选包内运行 `install.command` | `tools/macos_entry.py` |
 
 ## 核心模块
 
