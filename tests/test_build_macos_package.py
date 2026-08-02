@@ -21,6 +21,7 @@ def write_macho(path: Path, cpu_type: int) -> None:
     path.chmod(0o755)
 
 
+@unittest.skipUnless(sys.platform == "darwin", "macOS 包装测试仅在 macOS 运行。")
 class BuildMacOSPackageCliTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_context = tempfile.TemporaryDirectory(prefix="parse-video-macos-package-")

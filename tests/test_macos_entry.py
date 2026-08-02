@@ -12,6 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ENTRY = REPO_ROOT / "tools" / "macos_entry.py"
 
 
+@unittest.skipUnless(sys.platform == "darwin", "macOS 入口测试仅在 macOS 运行。")
 class MacOSEntryCliTests(unittest.TestCase):
     def test_skill_help_is_available_through_the_bundled_entry(self) -> None:
         completed = subprocess.run(
