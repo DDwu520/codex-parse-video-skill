@@ -31,8 +31,11 @@ class RuntimePathTests(unittest.TestCase):
         )
 
         self.assertEqual(environment["SystemRoot"], "C:/Windows")
-        self.assertEqual(environment["TEMP"], "C:/Temp/job")
-        self.assertEqual(environment["USERPROFILE"], "C:/Temp/isolated home")
+        self.assertEqual(environment["TEMP"], str(Path("C:/Temp/job")))
+        self.assertEqual(
+            environment["USERPROFILE"],
+            str(Path("C:/Temp/isolated home")),
+        )
         self.assertFalse(any("proxy" in key.casefold() for key in environment))
         self.assertNotIn("PARSE_VIDEO_PASSWORD", environment)
 

@@ -146,6 +146,7 @@ class DownloadWrapperTests(unittest.TestCase):
         module.OUTPUT_DIR = self.root / "downloads"
         module.ISOLATED_HOME = self.root / "home"
         module.TEMP_ROOT = self.root / "jobs"
+        module.FFPROBE = self.make_fake_ffprobe()
 
         with mock.patch.object(
             sys,
@@ -164,6 +165,7 @@ class DownloadWrapperTests(unittest.TestCase):
         module.OUTPUT_DIR = self.root / "downloads"
         module.ISOLATED_HOME = self.root / "home"
         module.TEMP_ROOT = self.root / "jobs"
+        module.FFPROBE = self.make_fake_ffprobe()
 
         with mock.patch.object(
             sys,

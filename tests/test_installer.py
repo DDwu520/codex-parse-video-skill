@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -96,6 +97,29 @@ class InstallerCliTests(unittest.TestCase):
 
         self.assertEqual(report["status"], "dry_run")
         self.assertFalse(self.codex_home.exists())
+
+    def test_json_output_survives_non_utf8_console_encoding(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(INSTALLER),
+                "status",
+                "--codex-home",
+                str(self.codex_home),
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+            env={
+                **os.environ,
+                "PYTHONIOENCODING": "cp1252",
+                "PYTHONUTF8": "0",
+            },
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(json.loads(completed.stdout)["status"], "not_installed")
 
     def test_invalid_source_is_rejected_without_touching_existing_skill(self) -> None:
         destination = self.codex_home / "skills" / "parse-video"
