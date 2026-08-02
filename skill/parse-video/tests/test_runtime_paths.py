@@ -116,13 +116,14 @@ class RuntimePathTests(unittest.TestCase):
     def test_bundled_launcher_can_set_the_installed_skill_directory(self) -> None:
         import runtime_paths
 
-        installed = Path("/Users/another-user/.codex/skills/parse-video")
+        simulated_home = Path(tempfile.gettempdir()).resolve() / "another-user"
+        installed = simulated_home / ".codex" / "skills" / "parse-video"
         paths = runtime_paths.resolve_runtime_paths(
             platform_name="macos",
             architecture="arm64",
-            home=Path("/Users/another-user"),
+            home=simulated_home,
             environ={"PARSE_VIDEO_SKILL_DIR": str(installed)},
-            temp_dir=Path("/private/tmp"),
+            temp_dir=Path(tempfile.gettempdir()),
         )
 
         self.assertEqual(paths.skill_dir, installed)
