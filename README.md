@@ -1,21 +1,59 @@
-# parse-video Codex Skill 跨平台分支
+# parse-video：把公开视频链接交给 Codex 下载、理解或蒸馏
 
-本仓库基于 `wujunwei928/parse-video` 的 MIT 许可源码，增加了微博公开视频修复、Codex Skill 三模式（下载、理解、蒸馏）、跨平台安全路径、临时媒体清理、Windows x64 安装/回滚和候选包构建。
+你只要把一条公开视频的分享链接发给 Codex，就可以让它处理；不需要先手动下载视频、上传文件、打开浏览器或登录平台。
 
-当前发布状态：
+目前可处理固定解析器已登记平台的公开链接，例如抖音、哔哩哔哩、小红书、快手、微博、西瓜和腾讯视频等。已完成真实验证的平台与未验证边界，请看 [`platform-validation.md`](skill/parse-video/references/platform-validation.md)。
 
-- macOS Apple Silicon：既有五个平台已完成真实验证；自包含候选包构建已进入 CI 验证。
-- Windows x64：`v1.0.0-rc.3` 统一候选包已进入 CI 重建；真实 Windows 尚未验收，不能称正式可用。
-- macOS Intel x64：自包含候选包构建已进入 CI 验证；真实 Intel Mac 尚未验收。
-- 微信视频号：当前不支持。
+## 先下载适合你的版本
 
-Codex Skill 位于 `skill/parse-video/`；候选包说明见 `packaging/README-WINDOWS.md` 和 `packaging/README-MACOS.md`。候选包不读取浏览器 Cookie、不绕过登录或 DRM，也不启动上游默认 HTTP 服务。平台真实验收边界见 `skill/parse-video/references/platform-validation.md`。
+请从 [GitHub Releases](https://github.com/DDwu520/codex-parse-video-skill/releases/tag/v1.0.0-rc.3) 下载：
 
-准备参加 Windows 真实机器验收，请先阅读 [`TESTING-WINDOWS-RC.md`](TESTING-WINDOWS-RC.md)。测试结果请通过仓库的“Windows RC 验收”问题模板提交；报告不得包含用户名、完整本机路径、Cookie、Token 或私密视频链接。
+| 你的电脑 | 下载文件 |
+| --- | --- |
+| Windows 10/11 x64 | `parse-video-v1.0.0-rc.3-windows-x64.zip` |
+| M 系列 Mac（M1/M2/M3/M4） | `parse-video-v1.0.0-rc.3-macos-arm64.zip` |
+| Intel Mac | `parse-video-v1.0.0-rc.3-macos-x64.zip` |
 
-以下保留上游解析器原说明：
+下载后先核对 Release 页面提供的 `SHA256SUMS.txt`，再完整解压 ZIP。安装和使用步骤见：[Windows 说明](packaging/README-WINDOWS.md)｜[macOS 说明](packaging/README-MACOS.md)。
 
----
+## 这个 Skill 能做什么
+
+| 你对 Codex 说 | 它会做什么 | 最终保留什么 |
+| --- | --- | --- |
+| “下载这个视频” | 下载完整媒体到桌面“下载视频”，每条视频单独一个文件夹 | 完整视频 |
+| “理解 / 总结这个视频” | 临时读取视频、转写口播、抽取关键画面并交叉核对 | 理解报告；完整视频和音频会清理 |
+| “蒸馏这个视频” | 生成可审计证据包，交给仓颉阶段 0 评估可提炼的候选 Skill | 时间戳转写、关键帧、证据包；完整视频和音频会清理 |
+
+理解与蒸馏并不等于“完全不用传输媒体”，而是你不用手动下载，且桌面不会保留完整视频。动作教学、软件操作和复杂课件会提高抽帧密度；ASR 不是人工逐字稿，重要结论会结合时间戳、画面和元数据复核。
+
+## 最短使用方式
+
+安装后，在 Codex 对话中直接粘贴一条公开分享链接，并说清意图，例如：
+
+```text
+下载这个视频：https://v.douyin.com/xxxx/
+总结这个视频：https://www.bilibili.com/video/BVxxxx
+蒸馏这个视频：https://www.xiaohongshu.com/explore/xxxx
+```
+
+也可以在终端运行包内入口。Windows 使用 `parse-video.cmd`，macOS 使用 `parse-video.command`；先执行 `doctor` 查看 FFmpeg、Whisper 和本地模型是否就绪。
+
+## 重要边界
+
+- 只处理你有权下载或合法归档、无需登录即可观看的公开视频。
+- 不读取浏览器 Cookie，不要求浏览器提前打开或登录。
+- 不绕过验证码、登录、付费、私密权限、DRM 或其他访问限制；遇到这些情况会停止并说明原因。
+- 不启动上游默认 HTTP 服务；普通用户不需要编译 Go、运行 Docker 或开启端口。
+- 微信视频号当前不支持；“解析器登记支持”不等于“已在真实平台验证”。
+- Windows x64、Apple Silicon Mac、Intel Mac 的 RC.3 自动化构建、安装和清单校验均已通过；但真实用户三模式验收仍在收集，本版本保持 `candidate`，不是正式稳定版。
+
+## 给开发者：上游解析器原始说明
+
+本仓库基于 [`wujunwei928/parse-video`](https://github.com/wujunwei928/parse-video) 的 MIT 许可源码。以下内容保留上游 Go、Docker 与 HTTP 解析服务的开发说明，仅供开发者参考；它不是普通用户安装或调用本 Skill 的必经步骤。
+
+<details>
+<summary>展开上游开发说明</summary>
+
 
    * [支持平台](#支持平台)
    * [安装](#安装)
@@ -261,3 +299,5 @@ go get github.com/go-resty/resty/v2
 go get github.com/tidwall/gjson
 go get github.com/PuerkitoBio/goquery
 ```
+
+</details>
