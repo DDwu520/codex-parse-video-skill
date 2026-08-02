@@ -1,6 +1,6 @@
 # Windows RC 公开验收指南
 
-感谢帮助验收 `parse-video v1.0.0-rc.1`。这是 Windows x64 候选版，不是正式稳定版。
+感谢帮助验收 `parse-video v1.0.0-rc.2`。这是 Windows x64 候选版，不是正式稳定版。
 
 ## 适用范围
 
@@ -11,12 +11,12 @@
 
 ## 下载与完整性
 
-从 GitHub Releases 下载 `parse-video-v1.0.0-rc.1-windows-x64.zip`，完整解压后运行 `verify.cmd`。
+从 GitHub Releases 下载 `parse-video-v1.0.0-rc.2-windows-x64.zip`，完整解压后运行 `verify.cmd`。
 
 发布包 SHA-256：
 
 ```text
-18c34f9c1e453de1c7796509a246907071f398e8e957523b5d5d3b206c1850f4
+0576bbafb24af3c73bf8b7a8f81241158ed365af5a4f9dc0d3b65835707c49f7
 ```
 
 如果 `verify.cmd` 报告缺失、额外文件或哈希不一致，请停止安装并提交反馈。
