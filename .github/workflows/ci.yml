@@ -209,3 +209,44 @@ jobs:
           name: parse-video-v1.0.0-rc.3-${{ matrix.target }}
           path: dist/parse-video-v1.0.0-rc.3-${{ matrix.target }}.zip
           if-no-files-found: error
+
+  release:
+    name: Publish v1.0.0-rc.3 prerelease
+    if: github.ref == 'refs/tags/v1.0.0-rc.3'
+    needs:
+      - test
+      - windows-package
+      - macos-package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v4
+
+      - name: Download verified candidate packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: parse-video-v1.0.0-rc.3-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate SHA256 checksums
+        shell: bash
+        run: |
+          cd release-assets
+          sha256sum *.zip > SHA256SUMS.txt
+
+      - name: Create GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create v1.0.0-rc.3 \
+            release-assets/*.zip \
+            release-assets/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "parse-video v1.0.0-rc.3 — Windows 与 macOS 跨平台测试版" \
+            --notes-file docs/releases/v1.0.0-rc.3.md \
+            --prerelease \
+            --verify-tag
